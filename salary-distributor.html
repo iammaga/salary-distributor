@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Симулятор Финансовой Жизни • Душанбе</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Golos+Text:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root {
+    --bg:#0e0e14; --card:#16161f; --card2:#1e1e2a;
+    --accent:#f5c842; --accent2:#ff6b6b; --accent3:#4ecdc4; --accent4:#a78bfa;
+    --text:#f0f0f5; --muted:#7070a0;
+    --base-color:#ff6b6b; --wish-color:#60a5fa; --save-color:#4ade80; 
+    --invest-color:#a78bfa; --reserve-color:#fb923c; --holiday-color:#ff9f43;
+    --sim-color:#4ade80; --risk-color:#ff6b6b;
+  }
+  *{
+    box-sizing:border-box;margin:0;padding:0;
+    -webkit-tap-highlight-color: transparent; /* Убираем синее выделение при тапе на мобилках */
+  }
+  body{
+    background:var(--bg);color:var(--text);font-family:'Golos Text',sans-serif;
+    min-height:100dvh;padding:16px 12px 80px;overflow-x:hidden;line-height:1.4;
+    max-width: 800px; margin: 0 auto;
+  }
+  body::before{content:'';position:fixed;top:-200px;left:-200px;width:600px;height:600px;background:radial-gradient(circle,rgba(245,200,66,.07) 0%,transparent 70%);pointer-events:none}
+  body::after{content:'';position:fixed;bottom:-150px;right:-150px;width:500px;height:500px;background:radial-gradient(circle,rgba(78,205,196,.06) 0%,transparent 70%);pointer-events:none}
+
+  h1{font-family:'Unbounded',sans-serif;font-size:clamp(1.35rem,5.5vw,1.85rem);font-weight:900;text-align:center;line-height:1.15;margin-bottom:8px;background:linear-gradient(135deg,var(--accent),#ff9f43);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .subtitle{text-align:center;color:var(--muted);font-size:.82rem;margin-bottom:20px;letter-spacing:.02em}
+
+  .card{background:var(--card);border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:18px 16px;margin-bottom:14px}
+  .card-accent{border-color:rgba(245,200,66,.2);position:relative;overflow:hidden}
+  .card-accent::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),#ff9f43,transparent)}
+
+  .section-label{font-family:'Unbounded',sans-serif;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;margin-bottom:9px}
+  .label-gold{color:var(--accent)}
+  .label-teal{color:var(--accent3)}
+  .label-purple{color:var(--accent4)}
+  .label-orange{color:var(--holiday-color)}
+  .label-green{color:var(--sim-color)}
+  .label-red{color:var(--risk-color)}
+
+  .currency-switcher{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+  .cur-btn{flex:1;min-width:90px;background:var(--card2);border:1.5px solid rgba(255,255,255,.08);border-radius:14px;padding:10px 6px 7px;color:var(--muted);font-family:'Unbounded',sans-serif;font-size:.68rem;font-weight:700;cursor:pointer;transition:all .18s;text-align:center}
+  .cur-btn .cur-flag{font-size:1.35rem;display:block;margin-bottom:2px}
+  .cur-btn .cur-sym{display:block;font-size:.82rem;opacity:.75;margin-top:1px}
+  .cur-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(245,200,66,.09);box-shadow:0 0 14px rgba(245,200,66,.2)}
+
+  .salary-row{display:flex;gap:8px;align-items:center;margin:12px 0}
+  .salary-input-wrap{flex:1;position:relative}
+  .salary-input-wrap input{width:100%;background:var(--card2);border:1.5px solid rgba(255,255,255,.1);border-radius:12px;padding:13px 48px 13px 16px;font-family:'Unbounded',sans-serif;font-size:1.18rem;font-weight:700;color:var(--text);outline:none}
+  .salary-input-wrap input:focus{border-color:var(--accent)}
+  .cur-symbol{position:absolute;right:16px;top:50%;transform:translateY(-50%);color:var(--accent);font-weight:700;font-size:1.05rem}
+
+  .calc-btn{background:linear-gradient(135deg,var(--accent),#ff9f43);color:#111;font-family:'Unbounded',sans-serif;font-size:.75rem;font-weight:700;border:none;border-radius:12px;padding:13px 16px;cursor:pointer;letter-spacing:.03em;white-space:nowrap;flex-shrink:0}
+  .calc-btn:hover{transform:translateY(-1px)}
+
+  .presets-label{font-size:.74rem;color:var(--muted);margin-bottom:7px}
+  .presets{display:flex;gap:6px;flex-wrap:wrap}
+  .preset-btn{background:var(--card2);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 11px;color:var(--text);font-size:.78rem;font-weight:500;cursor:pointer;transition:all .15s}
+  .preset-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+  .profile-grid{display:grid;grid-template-columns:1fr;gap:12px}
+  @media (min-width: 480px) {.profile-grid{grid-template-columns:1fr 1fr}}
+
+  .profile-item label{display:block;font-size:.7rem;color:var(--muted);margin-bottom:4px}
+  .profile-item select{width:100%;background:var(--card2);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:9px 12px;color:var(--text);font-size:.87rem;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%237070a0' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:calc(100% - 12px) center}
+
+  .slider-row{margin-bottom:13px}
+  .slider-header{display:flex;justify-content:space-between;font-size:.81rem;margin-bottom:5px}
+  .slider-val{font-weight:600;color:var(--accent)}
+  input[type=range]{width:100%;-webkit-appearance:none;height:6px;border-radius:6px;background:rgba(255,255,255,.1);outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 0 8px rgba(245,200,66,.5)}
+
+  .results{display:none}
+  .results.show{display:block;animation:fadeUp .4s ease both}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+  .summary-amount{font-family:'Unbounded',sans-serif;font-size:clamp(1.9rem,6vw,2.2rem);font-weight:900;color:var(--accent);margin-bottom:14px;text-align:center}
+  .progress-bar{height:10px;border-radius:10px;background:rgba(255,255,255,.07);overflow:hidden;display:flex;margin-bottom:12px}
+  .progress-seg{height:100%;transition:width .6s cubic-bezier(.34,1.56,.64,1)}
+  .legend{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  .legend-item{display:flex;align-items:center;gap:5px;font-size:.76rem;color:var(--muted)}
+  .legend-dot{width:8px;height:8px;border-radius:50%}
+
+  .conversion-box{background:var(--card2);border-radius:16px;padding:14px 16px;margin-bottom:14px;border:1px solid rgba(78,205,196,.18)}
+  .conversion-row{display:block;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+  .conversion-row:last-child{border-bottom:none}
+  .conversion-cur{font-size:.82rem;color:var(--muted);display:flex;align-items:center;gap:7px}
+  .conversion-amt{font-family:'Unbounded',sans-serif;font-size:.88rem;font-weight:700;color:var(--text)}
+
+  .category-block{background:var(--card);border-radius:20px;padding:16px 16px;margin-bottom:12px;border:1px solid rgba(255,255,255,.07)}
+  .category-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;cursor:pointer}
+  .category-name-wrap{display:flex;align-items:center;gap:9px}
+  .category-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.15rem}
+  .category-name{font-family:'Unbounded',sans-serif;font-size:.81rem;font-weight:700}
+  .category-total{font-family:'Unbounded',sans-serif;font-size:.92rem;font-weight:700}
+  .category-pct{font-size:.7rem;color:var(--muted);text-align:right}
+  .items-list{display:flex;flex-direction:column;gap:7px}
+  .item-row{display:flex;align-items:center;justify-content:space-between;background:var(--card2);border-radius:12px;padding:9px 12px;animation:fadeUp .3s ease both}
+  .item-left{display:flex;align-items:center;gap:9px}
+  .item-emoji{font-size:1.15rem}
+  .item-name{font-size:.84rem;font-weight:500}
+  .item-amount{font-family:'Unbounded',sans-serif;font-size:.83rem;font-weight:700}
+  .item-note{font-size:.71rem;color:var(--muted);margin-top:2px}
+
+  .holiday-block {
+    background: linear-gradient(135deg, rgba(255,159,67,.12), rgba(245,200,66,.08));
+    border: 1px solid rgba(255,159,67,.25);
+    border-radius: 20px;
+    padding: 18px 16px;
+    margin-bottom: 14px;
+  }
+  .holiday-header {display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;}
+  .holiday-total {font-family: 'Unbounded', sans-serif; font-size: 1.32rem; font-weight: 900; color: var(--holiday-color);}
+  .holiday-input {width: 100%; background: var(--card2); border: 1.5px solid rgba(255,255,255,.12); border-radius: 12px; padding: 12px 16px; font-family: 'Unbounded', sans-serif; font-size: 1.08rem; color: var(--text); text-align: center; outline: none;}
+  .holiday-input:focus {border-color: var(--holiday-color);}
+  .holiday-list {display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px;}
+  .holiday-item {background: var(--card2); border-radius: 12px; padding: 9px 11px; font-size: .83rem;}
+  .holiday-item-name {color: var(--muted); font-size: .76rem;}
+  .holiday-item-amt {font-family: 'Unbounded', sans-serif; font-weight: 700; color: var(--holiday-color);}
+
+  .risk-block {
+    background: linear-gradient(135deg, rgba(255,107,107,.12), rgba(251,146,60,.08));
+    border: 1px solid rgba(255,107,107,.25);
+    border-radius: 20px;
+    padding: 18px 16px;
+    margin-bottom: 14px;
+  }
+  .risk-header {display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+  .risk-btn {
+    background: linear-gradient(135deg, #ff6b6b, #fb923c);
+    color: #111;
+    font-family: 'Unbounded', sans-serif;
+    font-weight: 700;
+    border: none;
+    border-radius: 12px;
+    padding: 11px 18px;
+    cursor: pointer;
+    font-size: .84rem;
+  }
+  .risk-event {
+    background: var(--card2);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 12px;
+    border-left: 5px solid var(--risk-color);
+  }
+
+  .warning-box {
+    background: rgba(255,107,107,.15);
+    border: 1px solid rgba(255,107,107,.4);
+    border-radius: 16px;
+    padding: 13px 16px;
+    margin: 10px 0;
+    font-size: .82rem;
+    color: #ff9f9f;
+  }
+
+  .simulator-block {
+    background: linear-gradient(135deg, rgba(74,222,128,.1), rgba(167,139,250,.08));
+    border: 1px solid rgba(74,222,128,.25);
+    border-radius: 20px;
+    padding: 18px 16px;
+    margin-bottom: 14px;
+  }
+  .sim-header {display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;}
+  .sim-result {font-family:'Unbounded',sans-serif; font-size:1.75rem; font-weight:900; color:var(--sim-color);}
+  
+  .sim-inputs-grid {display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:18px}
+  @media (min-width: 480px) {.sim-inputs-grid{grid-template-columns:1fr 1fr}}
+  .sim-inputs-grid input[type="number"] {outline:none; border: 1.5px solid transparent;}
+  .sim-inputs-grid input[type="number"]:focus {border-color: var(--sim-color);}
+
+  .sim-table {width:100%; border-collapse:collapse; margin-top:12px;font-size:.8rem}
+  .sim-table th, .sim-table td {padding:7px 8px; text-align:left; border-bottom:1px solid rgba(255,255,255,.08)}
+  .sim-chart-container {margin:18px 0; height:200px; background:var(--card2); border-radius:16px; position:relative}
+
+  .advice-block{background:linear-gradient(135deg,rgba(167,139,250,.1),rgba(78,205,196,.08));border:1px solid rgba(167,139,250,.2);border-radius:20px;padding:18px 16px;margin-bottom:12px}
+  .advice-item{display:flex;gap:9px;margin-bottom:9px;font-size:.83rem;line-height:1.45;color:rgba(240,240,245,.85)}
+  .advice-item:last-child{margin-bottom:0}
+  .advice-bullet{color:var(--accent4);flex-shrink:0;margin-top:2px}
+
+  .section-divider{text-align:center;color:var(--muted);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;margin:16px 0 10px;font-family:'Unbounded',sans-serif}
+  .reset-btn{width:100%;background:transparent;border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:13px;color:var(--muted);font-size:.9rem;cursor:pointer;margin-top:8px}
+  .reset-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .sim-btn{background:linear-gradient(135deg,#4ade80,#a78bfa);color:#111;font-weight:700;border:none;border-radius:14px;padding:14px 20px;cursor:pointer;font-family:'Unbounded',sans-serif;margin-top:12px;width:100%;}
+
+  /* 📱 Мобильные улучшения доведенные до идеала */
+  @media (max-width: 480px) {
+    /* Добавлен учет Safe Area для iPhone */
+    body {padding:14px 10px max(70px, env(safe-area-inset-bottom));}
+    
+    .card, .category-block, .holiday-block, .risk-block, .simulator-block, .advice-block {
+      padding:16px 14px;
+      border-radius: 16px;
+    }
+    
+    h1 {font-size: 1.45rem;}
+    
+    .currency-switcher {gap:6px;}
+    .cur-btn {padding:10px 4px 8px; font-size:.65rem; min-width:0;}
+    .cur-btn .cur-flag {font-size: 1.25rem;}
+    
+    /* Инпут и кнопка расчета друг под другом для идеального попадания пальцем */
+    .salary-row {flex-direction: column; align-items: stretch; margin: 12px 0; gap: 10px;}
+    .salary-input-wrap input {padding: 14px 48px 14px 16px; font-size: 1.2rem;}
+    .calc-btn {width: 100%; padding: 15px 16px; font-size: .8rem;}
+    
+    .presets {gap:6px;}
+    .preset-btn {padding:8px 10px; font-size:.78rem; flex: 1 1 auto; text-align: center;}
+    
+    .profile-item select {padding: 12px 12px; font-size: .9rem;}
+    
+    /* Увеличенные touch-зоны для ползунков */
+    input[type=range]::-webkit-slider-thumb {width: 22px; height: 22px;}
+    
+    .legend {gap:8px 12px; justify-content:flex-start;}
+    .summary-amount {font-size:1.8rem; margin-bottom: 12px;}
+    
+    .conversion-box {padding: 12px 14px;}
+    .conversion-amt {font-size: .8rem;}
+
+    /* Выравнивание шапок категорий */
+    .category-header {align-items: flex-start;}
+    .category-icon {margin-top: 2px;}
+    .category-total {font-size: .85rem;}
+    .category-pct {text-align: left; margin-top: 2px;}
+    
+    .item-row {padding: 10px 12px;}
+    .item-name {font-size: .8rem;}
+    .item-amount {font-size: .8rem;}
+
+    /* Адаптация сетки симулятора */
+    .sim-inputs-grid {grid-template-columns: 1fr; gap: 14px;}
+    
+    .holiday-header {flex-direction: column; align-items: flex-start; gap: 10px;}
+    .holiday-total {font-size: 1.2rem;}
+    
+    .risk-header {flex-direction: column; align-items: flex-start; gap: 12px;}
+    .risk-btn {width: 100%; padding: 14px 18px; text-align: center;}
+    
+    .sim-header {flex-direction: column; align-items: flex-start; gap: 8px;}
+    .sim-chart-container { height: 400px; }
+  }
+
+.holiday-block { background: var(--card); border-radius: 20px; padding: 16px 16px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,.07); }
+.holiday-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.holiday-total { font-family: 'Unbounded',sans-serif; font-size: 1.2rem; font-weight: 700; color: var(--holiday-color); }
+.holiday-input { width: 100%; background: var(--card2); border: 1px solid rgba(255,255,255,.08); border-radius: 10px; padding: 9px 12px; color: var(--text); font-size: .87rem; outline: none; margin-bottom: 12px; }
+.holiday-list { display: flex; flex-direction: column; gap: 7px; }
+.holiday-item { display: flex; align-items: center; justify-content: space-between; background: var(--card2); border-radius: 12px; padding: 9px 12px; }
+.holiday-item-name { font-size: .8rem; }
+.holiday-item-amt { font-size: .8rem; font-weight: 600; color: var(--holiday-color); }
+
+.simulator-block { background: var(--card); border-radius: 20px; padding: 16px 16px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,.07); }
+.sim-btn { background: linear-gradient(135deg,var(--sim-color),#4ade80); color: #111; font-family: 'Unbounded',sans-serif; font-size: .75rem; font-weight: 700; border: none; border-radius: 12px; padding: 13px 16px; cursor: pointer; width: 100%; }
+.sim-result { font-family: 'Unbounded',sans-serif; font-size: 1.5rem; font-weight: 900; color: var(--sim-color); }
+.sim-chart-container { margin-top: 16px; height: 300px; }
+.sim-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: .8rem; }
+.sim-table th, .sim-table td { padding: 8px; text-align: left; border-bottom: 1px solid rgba(255,255,255,.1); }
+.sim-table th { color: var(--muted); font-weight: 600; }
+
+.risk-block { background: var(--card); border-radius: 20px; padding: 16px 16px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,.07); }
+.risk-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.risk-btn { background: linear-gradient(135deg,var(--risk-color),#ff6b6b); color: #fff; font-family: 'Unbounded',sans-serif; font-size: .75rem; font-weight: 700; border: none; border-radius: 12px; padding: 13px 16px; cursor: pointer; }
+.risk-event { text-align: center; padding: 16px; background: var(--card2); border-radius: 16px; }
+.risk-name { font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; }
+.risk-impact { font-size: 1.2rem; font-weight: 700; color: var(--risk-color); margin-bottom: 8px; }
+.risk-advice { font-size: .8rem; color: var(--muted); }
+
+.advice-block { background: var(--card); border-radius: 20px; padding: 16px 16px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,.07); }
+.advice-item { display: flex; gap: 8px; margin-bottom: 8px; }
+.advice-bullet { color: var(--accent); font-weight: 700; }
+
+.reset-btn { background: var(--card2); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; padding: 12px 16px; color: var(--text); font-size: .8rem; cursor: pointer; margin-top: 16px; width: 100%; }
+
+.section-divider { text-align: center; font-size: 1.2rem; margin: 20px 0; color: var(--muted); }
+
+.warning-box { background: rgba(255,107,107,.1); border: 1px solid rgba(255,107,107,.3); border-radius: 12px; padding: 12px; color: var(--text); font-size: .8rem; margin-bottom: 12px; }
+
+@media (max-width: 479px) {
+  .sim-chart-container { height: 200px; }
+  .sim-table { font-size: .65rem; overflow-x: auto; display: block; white-space: nowrap; }
+  .sim-table th, .sim-table td { padding: 6px 4px; }
+  .sim-result { font-size: 1.1rem; }
+  .sim-inputs-grid { gap: 10px; }
+  .sim-inputs-grid input { font-size: .9rem; padding: 10px; }
+  .sim-inputs-grid label { font-size: .75rem; }
+  .sim-btn { padding: 14px 16px; font-size: .8rem; }
+  .sim-header { gap: 6px; }
+  .sim-header > div:last-child { font-size: .75rem; }
+}
+
+@media (max-width: 360px) {
+  body { padding: 12px 8px 60px; }
+  h1 { font-size: clamp(1.2rem, 5vw, 1.6rem); }
+  .subtitle { font-size: .75rem; margin-bottom: 16px; }
+  .card { padding: 14px 12px; margin-bottom: 10px; }
+  .section-label { font-size: .55rem; }
+  .currency-switcher { gap: 4px; }
+  .cur-btn { min-width: 70px; padding: 8px 3px 6px; font-size: .6rem; }
+  .cur-btn .cur-flag { font-size: 1.1rem; }
+  .cur-btn .cur-sym { font-size: .7rem; }
+  .salary-row { gap: 8px; }
+  .salary-input-wrap input { padding: 11px 40px 11px 14px; font-size: 1.1rem; }
+  .calc-btn { padding: 12px 14px; font-size: .72rem; }
+  .presets { gap: 4px; }
+  .preset-btn { padding: 5px 8px; font-size: .7rem; }
+  .profile-grid { gap: 10px; }
+  .profile-item select { padding: 8px 10px; font-size: .8rem; }
+  .slider-row { margin-bottom: 10px; }
+  .slider-header { font-size: .75rem; }
+  input[type=range]::-webkit-slider-thumb { width: 20px; height: 20px; }
+  .summary-amount { font-size: clamp(1.6rem, 5vw, 2rem); margin-bottom: 10px; }
+  .progress-bar { height: 8px; margin-bottom: 10px; }
+  .legend { gap: 8px 10px; }
+  .legend-item { font-size: .7rem; }
+  .legend-dot { width: 6px; height: 6px; }
+  .conversion-box { padding: 10px 12px; }
+  .conversion-row { padding: 5px 0; }
+  .conversion-cur { font-size: .75rem; }
+  .conversion-amt { font-size: .8rem; }
+  .category-block { padding: 14px 14px; margin-bottom: 10px; }
+  .category-header { margin-bottom: 10px; }
+  .category-name { font-size: .75rem; }
+  .category-total { font-size: .85rem; }
+  .category-pct { font-size: .65rem; }
+  .items-list { gap: 6px; }
+  .item-row { padding: 8px 10px; }
+  .item-name { font-size: .75rem; }
+  .item-amount { font-size: .75rem; }
+  .holiday-block { padding: 14px 14px; margin-bottom: 10px; }
+  .holiday-header { margin-bottom: 10px; }
+  .holiday-total { font-size: 1.1rem; }
+  .holiday-input { padding: 8px 10px; font-size: .8rem; margin-bottom: 10px; }
+  .holiday-list { gap: 6px; }
+  .holiday-item { padding: 7px 10px; }
+  .holiday-item-name { font-size: .7rem; }
+  .holiday-item-amt { font-size: .7rem; }
+  .risk-block { padding: 14px 14px; margin-bottom: 10px; }
+  .risk-header { margin-bottom: 10px; }
+  .risk-btn { padding: 12px 16px; font-size: .75rem; }
+  .risk-event { padding: 14px; }
+  .risk-name { font-size: 1rem; margin-bottom: 6px; }
+  .risk-impact { font-size: 1.1rem; margin-bottom: 6px; }
+  .risk-advice { font-size: .75rem; }
+  .advice-block { padding: 14px 14px; margin-bottom: 10px; }
+  .advice-item { margin-bottom: 6px; }
+  .reset-btn { padding: 10px 14px; font-size: .75rem; margin-top: 14px; }
+  .section-divider { font-size: 1rem; margin: 16px 0; }
+  .warning-box { padding: 10px; font-size: .75rem; margin-bottom: 10px; }
+}
+
+</style>
+</head>
+<body>
+
+<h1>Симулятор Финансовой Жизни</h1>
+<p class="subtitle">Распределение ЗП + прогноз на годы вперёд • Душанбе, Таджикистан</p>
+
+<div class="card card-accent">
+  <div class="section-label label-gold">Выберите валюту</div>
+  <div class="currency-switcher">
+    <button class="cur-btn active" id="cur-TJS" onclick="setCurrency('TJS')"><span class="cur-flag">🇹🇯</span>Сомони<span class="cur-sym">С</span></button>
+    <button class="cur-btn" id="cur-RUB" onclick="setCurrency('RUB')"><span class="cur-flag">🇷🇺</span>Рубль<span class="cur-sym">₽</span></button>
+    <button class="cur-btn" id="cur-USD" onclick="setCurrency('USD')"><span class="cur-flag">🇺🇸</span>Доллар<span class="cur-sym">$</span></button>
+  </div>
+
+  <div class="section-label label-gold">Ваша зарплата сейчас</div>
+  <div class="salary-row">
+    <div class="salary-input-wrap">
+      <input type="number" id="salaryInput" placeholder="5 000" min="0" step="100">
+      <span class="cur-symbol" id="currencySymbol">С</span>
+    </div>
+    <button class="calc-btn" onclick="calculate()">СЧИТАТЬ + СИМУЛИРОВАТЬ</button>
+  </div>
+
+  <div class="presets-label">Быстрый выбор:</div>
+  <div class="presets" id="presets-row"></div>
+</div>
+
+<div class="card">
+  <div class="section-label label-teal">Ваш профиль</div>
+  <div class="profile-grid">
+    <div class="profile-item"><label>Семейное положение</label><select id="family" onchange="calculate()"><option value="single">Один / одна</option><option value="couple">Пара</option><option value="family">Семья с детьми</option></select></div>
+    <div class="profile-item"><label>Жильё</label><select id="housing" onchange="calculate()"><option value="rent">Аренда</option><option value="own">Своя квартира</option><option value="mortgage">Ипотека / кредит на жильё</option></select></div>
+    <div class="profile-item"><label>Главная цель</label><select id="goal" onchange="calculate()"><option value="savings">Накопить подушку</option><option value="invest">Инвестировать</option><option value="travel">Путешествия</option><option value="property">Купить жильё</option></select></div>
+    <div class="profile-item"><label>Долги / кредиты</label><select id="debt" onchange="calculate()"><option value="none">Нет долгов</option><option value="small">Небольшие</option><option value="medium">Средние</option><option value="large">Большие</option></select></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="section-label label-gold">Пропорции распределения ЗП</div>
+  <div class="slider-row"><div class="slider-header"><span>🔴 База</span><span class="slider-val" id="baseSliderVal">55%</span></div><input type="range" id="baseSlider" min="30" max="85" value="55" oninput="onSlider()"></div>
+  <div class="slider-row"><div class="slider-header"><span>🟢 Сбережения</span><span class="slider-val" id="saveSliderVal">15%</span></div><input type="range" id="saveSlider" min="5" max="50" value="15" oninput="onSlider()"></div>
+  <div class="slider-row"><div class="slider-header"><span>🔵 Желания</span><span class="slider-val" id="wishSliderVal">15%</span></div><input type="range" id="wishSlider" min="5" max="40" value="15" oninput="onSlider()"></div>
+  <div id="sliderNote" style="font-size:.77rem;color:var(--muted);margin-top:4px">Остаток → инвестиции: 15%</div>
+</div>
+
+<div class="results" id="results">
+
+  <div class="card">
+    <div class="section-label label-gold">Ваша зарплата</div>
+    <div class="summary-amount" id="summaryAmt"></div>
+    <div class="progress-bar">
+      <div class="progress-seg" id="seg-base" style="background:var(--base-color)"></div>
+      <div class="progress-seg" id="seg-wish" style="background:var(--wish-color)"></div>
+      <div class="progress-seg" id="seg-save" style="background:var(--save-color)"></div>
+      <div class="progress-seg" id="seg-invest" style="background:var(--invest-color)"></div>
+      <div class="progress-seg" id="seg-debt" style="background:var(--reserve-color)"></div>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--base-color)"></div>База</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--wish-color)"></div>Желания</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--save-color)"></div>Сбережения</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--invest-color)"></div>Инвестиции</div>
+      <div class="legend-item" id="debt-legend" style="display:none"><div class="legend-dot" style="background:var(--reserve-color)"></div>Долги</div>
+    </div>
+  </div>
+
+  <div class="conversion-box">
+    <div class="section-label label-teal">💱 Эквивалент в других валютах</div>
+    <div class="conversion-row" id="conv-row-TJS" style="display:none"><span class="conversion-cur">🇹🇯 Таджикский сомони</span><span class="conversion-amt" id="conv-TJS-amt"></span></div>
+    <div class="conversion-row" id="conv-row-RUB" style="display:none"><span class="conversion-cur">🇷🇺 Российский рубль</span><span class="conversion-amt" id="conv-RUB-amt"></span></div>
+    <div class="conversion-row" id="conv-row-USD" style="display:none"><span class="conversion-cur">🇺🇸 Доллар США</span><span class="conversion-amt" id="conv-USD-amt"></span></div>
+    <div style="font-size:.69rem;color:var(--muted);margin-top:8px">* Курсы: 1$ ≈ 10.9 С ≈ 90 ₽</div>
+  </div>
+
+  <div class="category-block">
+    <div class="category-header" onclick="toggleCat('base-items')"><div class="category-name-wrap"><div class="category-icon" style="background:rgba(255,107,107,.15)">🏠</div><div><div class="category-name" style="color:var(--base-color)">База</div><div style="font-size:.71rem;color:var(--muted)">Обязательные расходы</div></div></div><div style="text-align:right"><div class="category-total" id="base-total" style="color:var(--base-color)"></div><div class="category-pct" id="base-pct"></div></div></div>
+    <div class="items-list" id="base-items"></div>
+  </div>
+  <div class="category-block">
+    <div class="category-header" onclick="toggleCat('wish-items')"><div class="category-name-wrap"><div class="category-icon" style="background:rgba(96,165,250,.15)">✨</div><div><div class="category-name" style="color:var(--wish-color)">Желания</div><div style="font-size:.71rem;color:var(--muted)">Качество жизни</div></div></div><div style="text-align:right"><div class="category-total" id="wish-total" style="color:var(--wish-color)"></div><div class="category-pct" id="wish-pct"></div></div></div>
+    <div class="items-list" id="wish-items"></div>
+  </div>
+  <div class="category-block">
+    <div class="category-header" onclick="toggleCat('save-items')"><div class="category-name-wrap"><div class="category-icon" style="background:rgba(74,222,128,.15)">💰</div><div><div class="category-name" style="color:var(--save-color)">Сбережения</div><div style="font-size:.71rem;color:var(--muted)">Подушка</div></div></div><div style="text-align:right"><div class="category-total" id="save-total" style="color:var(--save-color)"></div><div class="category-pct" id="save-pct"></div></div></div>
+    <div class="items-list" id="save-items"></div>
+  </div>
+  <div class="category-block">
+    <div class="category-header" onclick="toggleCat('invest-items')"><div class="category-name-wrap"><div class="category-icon" style="background:rgba(167,139,250,.15)">📈</div><div><div class="category-name" style="color:var(--invest-color)">Инвестиции</div><div style="font-size:.71rem;color:var(--muted)">Деньги работают</div></div></div><div style="text-align:right"><div class="category-total" id="invest-total" style="color:var(--invest-color)"></div><div class="category-pct" id="invest-pct"></div></div></div>
+    <div class="items-list" id="invest-items"></div>
+  </div>
+  <div class="category-block" id="cat-debt" style="display:none">
+    <div class="category-header"><div class="category-name-wrap"><div class="category-icon" style="background:rgba(251,146,60,.15)">⚠️</div><div><div class="category-name" style="color:var(--reserve-color)">Долги</div><div style="font-size:.71rem;color:var(--muted)">Приоритет</div></div></div><div style="text-align:right"><div class="category-total" id="debt-total" style="color:var(--reserve-color)"></div><div class="category-pct" id="debt-pct"></div></div></div>
+    <div class="items-list" id="debt-items"></div>
+  </div>
+
+  <div id="debt-warning"></div>
+
+  <div class="holiday-block" id="holiday-block" style="display:none">
+    <div class="holiday-header">
+      <div><div class="section-label label-orange">🎉 Бюджет на праздники</div><div style="font-size:0.8rem;color:var(--muted)">Навруз, Новый год, тои, дни рождения</div><div style="font-size:0.7rem;color:var(--muted);margin-top:4px">Этот бюджет рассчитывается автоматически на основе зарплаты, но вы можете скорректировать его вручную.</div></div>
+      <div class="holiday-total" id="holiday-total"></div>
+    </div>
+    <input type="number" id="holidayInput" class="holiday-input" oninput="updateHoliday()" min="0">
+    <div class="holiday-list" id="holiday-list"></div>
+  </div>
+
+  <div class="risk-block" id="risk-block">
+    <div class="risk-header">
+      <div>
+        <div class="section-label label-red">🎲 Неожиданные события</div>
+        <div style="font-size:0.82rem;color:var(--muted)">Что может сильно ударить или помочь по бюджету</div>
+      </div>
+      <button class="risk-btn" onclick="triggerRandomEvent()">Случайное событие</button>
+    </div>
+    <div id="risk-events-list"></div>
+  </div>
+
+  <div class="simulator-block">
+    <div class="sim-header">
+      <div class="section-label label-green">📅 Симулятор финансовой жизни</div>
+      <div style="font-size:.8rem;color:var(--muted)">на 1–10 лет вперёд (с учётом долгов и событий)</div>
+      <div style="font-size:0.7rem;color:var(--muted);margin-top:4px">Моделирует рост капитала с учётом повышения зарплаты, доходности инвестиций и случайных событий.</div>
+    </div>
+
+    <div class="sim-inputs-grid">
+      <div>
+        <label style="font-size:.78rem;color:var(--muted)">Сколько лет симулировать</label>
+        <input type="range" id="yearsSlider" min="1" max="10" value="5" oninput="document.getElementById('yearsVal').textContent=this.value" style="width:100%;margin-top:6px;">
+        <div style="text-align:center;margin-top:4px"><span id="yearsVal" class="slider-val" style="color:var(--sim-color)">5</span> лет</div>
+      </div>
+      <div>
+        <label style="font-size:.78rem;color:var(--muted)">Ежегодный рост ЗП, %</label>
+        <input type="number" id="raiseInput" value="8" step="0.5" style="width:100%;background:var(--card2);border-radius:12px;padding:12px;font-size:1rem;color:var(--text);margin-top:6px;" placeholder="8%">
+        <div style="font-size:.7rem;color:var(--muted);margin-top:3px">Ваша зарплата растет на столько % в год</div>
+      </div>
+      <div>
+        <label style="font-size:.78rem;color:var(--muted)">Доходность инвестиций, %</label>
+        <input type="number" id="returnInput" value="18" step="0.5" style="width:100%;background:var(--card2);border-radius:12px;padding:12px;font-size:1rem;color:var(--text);margin-top:6px;" placeholder="18%">
+        <div style="font-size:.7rem;color:var(--muted);margin-top:3px">Ваши инвестиции растут на столько % в год</div>
+      </div>
+      <div>
+        <label style="font-size:.78rem;color:var(--muted)">Инфляция в год, %</label>
+        <input type="number" id="inflationInput" value="9" step="0.5" style="width:100%;background:var(--card2);border-radius:12px;padding:12px;font-size:1rem;color:var(--text);margin-top:6px;" placeholder="9%">
+        <div style="font-size:.7rem;color:var(--muted);margin-top:3px">Все дорожает на столько % в год</div>
+      </div>
+    </div>
+
+    <button class="sim-btn" onclick="runSimulation()">🚀 Запустить симуляцию</button>
+
+    <div id="sim-result-block" style="display:none;margin-top:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>Через <span id="sim-years-result" style="font-weight:700;color:var(--sim-color)"></span> лет у вас будет:</div>
+        <div class="sim-result" id="final-networth"></div>
+      </div>
+      <div style="font-size:0.8rem;color:var(--muted);margin-top:6px" id="sim-note"></div>
+      <div class="sim-chart-container"><canvas id="simChart"></canvas></div>
+      <table class="sim-table" id="sim-table"></table>
+    </div>
+  </div>
+
+  <div class="section-divider">💡 Персональные советы</div>
+  <div class="advice-block" id="advice-block"></div>
+  <button class="reset-btn" onclick="resetAll()">↺ Начать заново</button>
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────
+const RATES = { TJS: 10.9, RUB: 90, USD: 1 };
+
+const CURRENCIES = {
+  TJS: { symbol:'С', toUSD: v => v / 10.9, presets: [2000,3500,5000,8000,12000,20000,35000],
+         debtMap: { none:0, small:600, medium:1800, large:4500 },
+         fmt: v => Math.round(v).toLocaleString('ru-RU') + ' С' },
+  RUB: { symbol:'₽', toUSD: v => v / 90, presets: [40000,70000,110000,160000,250000,400000],
+         debtMap: { none:0, small:12000, medium:30000, large:70000 },
+         fmt: v => Math.round(v).toLocaleString('ru-RU') + ' ₽' },
+  USD: { symbol:'$', toUSD: v => v, presets: [400,700,1200,2000,3500,6000],
+         debtMap: { none:0, small:150, medium:450, large:1100 },
+         fmt: v => '$ ' + Math.round(v).toLocaleString('ru-RU') }
+};
+
+let currentCur = 'TJS';
+let salary = 0;
+let basePct = 55, savePct = 15, wishPct = 15;
+let holidayBudget = 0;
+let simulationData = [];
+let saveAmt = 0, investAmt = 0, debtAmt = 0, actualDebtPayment = 0;
+
+const randomEvents = [
+  {emoji:"🩹", name:"Срочная операция или лечение", impact: -0.65, advice:"Хорошо, что есть подушка"},
+  {emoji:"🚗", name:"Серьёзная поломка машины", impact: -0.45, advice:"Резерв на транспорт обязателен"},
+  {emoji:"🏠", name:"Затопление или срочный ремонт", impact: -0.55, advice:"Страховка сильно спасает"},
+  {emoji:"💒", name:"Большой той или свадьба родственника", impact: -0.70, advice:"Типичная крупная трата в Таджикистане"},
+  {emoji:"📉", name:"Потеря работы на 3 месяца", impact: -0.85, advice:"Подушка должна быть минимум на 6 месяцев"},
+  {emoji:"❄️", name:"Суровая зима — рост коммуналки", impact: -0.30, advice:"Готовься к зиме заранее"},
+  {emoji:"📱", name:"Кража или поломка важной техники", impact: -0.25, advice:"Делай резервные копии"},
+  {emoji:"🎁", name:"Неожиданная премия или возврат долга", impact: +0.50, advice:"Отличный момент увеличить инвестиции"}
+];
+
+function getMinSurvival(salaryUSD, family) {
+  let min = 1480;
+  if (family === 'couple') min = 2050;
+  if (family === 'family') min = 2680;
+  if (salaryUSD < 350) min = Math.max(min, salary * 0.93);
+  return Math.round(min * (currentCur === 'TJS' ? 1 : currentCur === 'RUB' ? 90/10.9 : 10.9));
+}
+
+function setCurrency(code) {
+  currentCur = code;
+  ['TJS','RUB','USD'].forEach(c => document.getElementById('cur-'+c).classList.toggle('active', c===code));
+  const cur = CURRENCIES[code];
+  document.getElementById('currencySymbol').textContent = cur.symbol;
+  const inp = document.getElementById('salaryInput');
+  inp.step = code==='TJS'?100:code==='RUB'?1000:50;
+  inp.placeholder = code==='TJS'?'5000':code==='RUB'?'150000':'2000';
+  inp.value = '';
+  renderPresets();
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('sim-result-block').style.display = 'none';
+  document.getElementById('risk-events-list').innerHTML = '';
+}
+
+function renderPresets() {
+  document.getElementById('presets-row').innerHTML = CURRENCIES[currentCur].presets.map(v =>
+    `<button class="preset-btn" onclick="setPreset(${v})">${v.toLocaleString('ru-RU')}</button>`
+  ).join('');
+}
+
+function setPreset(v) {
+  document.getElementById('salaryInput').value = v;
+  calculate();
+}
+
+function onSlider() {
+  basePct = +document.getElementById('baseSlider').value;
+  savePct = +document.getElementById('saveSlider').value;
+  wishPct = +document.getElementById('wishSlider').value;
+  document.getElementById('baseSliderVal').textContent = basePct + '%';
+  document.getElementById('saveSliderVal').textContent = savePct + '%';
+  document.getElementById('wishSliderVal').textContent = wishPct + '%';
+  const inv = Math.max(0, 100 - basePct - savePct - wishPct);
+  document.getElementById('sliderNote').textContent = `Остаток → инвестиции: ${inv}%`;
+}
+
+const fmt = v => CURRENCIES[currentCur].fmt(v);
+const pctStr = (n,t) => Math.round(n/t*100) + '%';
+
+function calculateHolidayBudget(salaryUSD) {
+  if (salaryUSD < 400) return Math.round(salary * 0.03);
+  if (salaryUSD < 800) return Math.round(salary * 0.045);
+  if (salaryUSD < 1500) return Math.round(salary * 0.06);
+  return Math.round(salary * 0.08);
+}
+
+function updateHoliday() {
+  holidayBudget = parseFloat(document.getElementById('holidayInput').value) || 0;
+  renderHoliday();
+}
+
+function renderHoliday() {
+  document.getElementById('holiday-total').textContent = fmt(holidayBudget);
+  document.getElementById('holidayInput').value = holidayBudget;
+  const list = [{name:"Навруз / Новый год", pct:0.35},{name:"Дни рождения", pct:0.25},{name:"Свадьбы / тои", pct:0.20},{name:"Рамадан / другие", pct:0.20}];
+  let html = '';
+  list.forEach(h => {
+    html += `<div class="holiday-item"><div class="holiday-item-name">${h.name}</div><div class="holiday-item-amt">${fmt(Math.round(holidayBudget * h.pct))}</div></div>`;
+  });
+  document.getElementById('holiday-list').innerHTML = html;
+}
+
+function triggerRandomEvent() {
+  const event = randomEvents[Math.floor(Math.random() * randomEvents.length)];
+  const impactAmount = Math.round(salary * Math.abs(event.impact));
+  const sign = event.impact > 0 ? '+' : '−';
+  const html = `
+    <div class="risk-event">
+      <div style="font-size:1.8rem;margin-bottom:8px">${event.emoji}</div>
+      <div class="risk-name">${event.name}</div>
+      <div class="risk-impact">${sign} ${fmt(impactAmount)}</div>
+      <div class="risk-advice">${event.advice}</div>
+    </div>
+  `;
+  document.getElementById('risk-events-list').innerHTML = html;
+}
+
+function renderCat(key, amt, total, items) {
+  document.getElementById(key+'-total').textContent = fmt(amt);
+  document.getElementById(key+'-pct').textContent = pctStr(amt,total) + ' от ЗП';
+  document.getElementById(key+'-items').innerHTML = items.map((it,i) => `
+    <div class="item-row" style="animation-delay:${i*0.05}s">
+      <div class="item-left"><span class="item-emoji">${it.emoji}</span><div><div class="item-name">${it.name}</div>${it.note?`<div class="item-note">${it.note}</div>`:''}</div></div>
+      <div class="item-amount">${fmt(it.amount)}</div>
+    </div>`).join('');
+}
+
+function renderConversion(sal) {
+  const usd = CURRENCIES[currentCur].toUSD(sal);
+  ['TJS','RUB','USD'].forEach(c => {
+    const row = document.getElementById('conv-row-'+c);
+    if (c === currentCur) { row.style.display = 'none'; return; }
+    document.getElementById('conv-'+c+'-amt').textContent = CURRENCIES[c].fmt(usd * RATES[c]);
+    row.style.display = 'flex';
+  });
+}
+
+function renderAdvice(salaryUSD) {
+  const tips = [];
+  if (salaryUSD < 600) tips.push('📉 При такой зарплате почти все деньги уходят на выживание. Инвестиции и путешествия пока недоступны.');
+  if (salaryUSD > 1800) tips.push('🎉 Вы в хорошей зоне — можно думать об инвестициях и путешествиях.');
+  tips.push('✅ Автоматизируйте переводы в сбережения сразу после получения ЗП.');
+  tips.push('🎲 Нажмите «Случайное событие», чтобы проверить бюджет на прочность.');
+
+  document.getElementById('advice-block').innerHTML = 
+    `<div class="section-label label-purple">Советы под вашу ситуацию</div>` +
+    tips.map(t=>`<div class="advice-item"><span class="advice-bullet">→</span><span>${t}</span></div>`).join('');
+}
+
+function toggleCat(id) {
+  const el = document.getElementById(id);
+  el.style.display = (el.style.display === 'none') ? 'flex' : 'none';
+}
+
+// ── ГЛАВНЫЙ РАСЧЁТ ─────────────────────────────────────────
+function calculate() {
+  const raw = parseFloat(document.getElementById('salaryInput').value);
+  if (isNaN(raw) || raw <= 0) {
+    alert('Пожалуйста, введите положительную зарплату.');
+    return;
+  }
+  salary = raw;
+
+  const cur = CURRENCIES[currentCur];
+  const salaryUSD = cur.toUSD(salary);
+  const family = document.getElementById('family').value;
+  const housing = document.getElementById('housing').value;
+  const goal = document.getElementById('goal').value;
+  const debtSel = document.getElementById('debt').value;
+
+  const minSurvival = getMinSurvival(salaryUSD, family);
+  let debtAmt = debtSel !== 'none' ? cur.debtMap[debtSel] : 0;
+
+  let remaining = Math.max(0, salary - minSurvival);
+
+  let actualDebtPayment = 0;
+  if (debtAmt > 0) {
+    actualDebtPayment = Math.min(debtAmt, Math.round(remaining * 0.45));
+    remaining -= actualDebtPayment;
+  }
+
+  let basePctEffective = salaryUSD < 500 ? 92 : salaryUSD < 800 ? 78 : 62;
+  let baseAmt = Math.round(salary * basePctEffective / 100);
+
+  let wishAmt = 0;
+  if (salaryUSD >= 950) {
+    wishAmt = Math.round(remaining * 0.28);
+  } else if (salaryUSD >= 600) {
+    wishAmt = Math.round(remaining * 0.18);
+  }
+
+  saveAmt = saveAmt;
+  investAmt = investAmt;
+  debtAmt = debtAmt;
+  actualDebtPayment = actualDebtPayment;
+
+  let housingCost = housing === 'rent' ? Math.round(Math.min(baseAmt * 0.48, salary * 0.42)) :
+                    housing === 'mortgage' ? Math.round(baseAmt * 0.42) : Math.round(baseAmt * 0.10);
+  const groceries = Math.round(baseAmt * (family==='family'?0.33:family==='couple'?0.25:0.21));
+  const utilities = Math.round(baseAmt * (housing==='own'?0.10:0.07));
+  const transport = Math.round(baseAmt * (salaryUSD < 600 ? 0.13 : 0.09));
+  const phone = Math.round(baseAmt * 0.035);
+  const hygiene = Math.round(baseAmt * 0.06);
+  const medical = Math.round(baseAmt * (family==='family'?0.09:0.06));
+
+  const baseItems = [];
+  if (housing === 'rent') baseItems.push({emoji:'🏠',name:'Аренда',amount:housingCost,note:'Самая большая статья'});
+  else if (housing === 'mortgage') baseItems.push({emoji:'🏠',name:'Ипотека',amount:housingCost,note:'Кредит'});
+  else baseItems.push({emoji:'🏠',name:'Коммуналка',amount:utilities,note:'Своя квартира'});
+  baseItems.push({emoji:'🛒',name:'Продукты',amount:groceries},{emoji:'🚇',name:'Транспорт',amount:transport},{emoji:'⚡',name:'Коммуналка/интернет',amount:utilities},{emoji:'📱',name:'Связь',amount:phone},{emoji:'🧴',name:'Гигиена',amount:hygiene},{emoji:'🩹',name:'Медицина',amount:medical});
+
+  let wishItems = [];
+  if (wishAmt > 0 && salaryUSD >= 950) {
+    wishItems = [
+      {emoji:'🍽️',name:'Кафе',amount:Math.round(wishAmt*0.35)},
+      {emoji:'🛍️',name:'Одежда',amount:Math.round(wishAmt*0.25)},
+      {emoji:'🎥',name:'Развлечения',amount:Math.round(wishAmt*0.15)},
+      {emoji:'✈️',name:'Путешествия',amount:Math.round(wishAmt*0.25)}
+    ];
+  } else if (wishAmt > 0) {
+    wishItems = [
+      {emoji:'🍽️',name:'Кафе',amount:Math.round(wishAmt*0.5)},
+      {emoji:'🛍️',name:'Одежда/мелкие покупки',amount:Math.round(wishAmt*0.3)},
+      {emoji:'🎥',name:'Развлечения',amount:Math.round(wishAmt*0.2)}
+    ];
+  } else {
+    wishItems = [{emoji:'⚠️',name:'Недостаточно средств',amount:0,note:'Путешествия и крупные желания — только при высоком доходе'}];
+  }
+
+  const saveItems = saveAmt > 0 ? 
+    [{emoji:'🏦',name:'Вклад / подушка',amount:Math.round(saveAmt*0.7),note:'На чёрный день'},{emoji:'💵',name:'Валюта',amount:Math.round(saveAmt*0.3)}] :
+    [{emoji:'⚠️',name:'Недостаточно средств',amount:0,note:'Сначала закройте базу'}];
+
+  const investItems = investAmt > 0 ? 
+    [{emoji:'📈',name:'Акции / ETF',amount:Math.round(investAmt*0.6)},{emoji:'📄',name:'Облигации',amount:Math.round(investAmt*0.25)},{emoji:'🪙',name:'Золото / USDT',amount:Math.round(investAmt*0.15)}] :
+    [{emoji:'⚠️',name:'Инвестиции пока недоступны',amount:0,note:'Только при доходе выше ~15000 С'}];
+
+  const debtItems = debtSel !== 'none' ? [{emoji:'⚠️',name:'Погашение долгов',amount:actualDebtPayment,note:'Приоритет'}] : [];
+
+  // Update global variables for simulation
+  window.saveAmt = saveAmt;
+  window.investAmt = investAmt;
+  window.debtAmt = debtAmt;
+  window.actualDebtPayment = actualDebtPayment;
+
+  document.getElementById('summaryAmt').textContent = fmt(salary);
+  document.getElementById('seg-base').style.width = pctStr(baseAmt, salary);
+  document.getElementById('seg-wish').style.width = pctStr(wishAmt, salary);
+  document.getElementById('seg-save').style.width = pctStr(saveAmt, salary);
+  document.getElementById('seg-invest').style.width = pctStr(investAmt, salary);
+  document.getElementById('seg-debt').style.width = pctStr(actualDebtPayment, salary);
+
+  renderCat('base', baseAmt, salary, baseItems);
+  renderCat('wish', wishAmt, salary, wishItems);
+  renderCat('save', saveAmt, salary, saveItems);
+  renderCat('invest', investAmt, salary, investItems);
+
+  const showDebt = debtSel !== 'none';
+  document.getElementById('debt-legend').style.display = showDebt ? 'flex' : 'none';
+  document.getElementById('cat-debt').style.display = showDebt ? 'block' : 'none';
+  if (showDebt) renderCat('debt', actualDebtPayment, salary, debtItems);
+
+  let warningHTML = '';
+  if (salaryUSD < 950) {
+    warningHTML = `<div class="warning-box">⚠️ Инвестиции и путешествия доступны только при высоком доходе.<br>Сейчас почти всё уходит на базу и минимальные нужды.</div>`;
+  }
+  document.getElementById('debt-warning').innerHTML = warningHTML;
+
+  renderConversion(salary);
+  holidayBudget = calculateHolidayBudget(salaryUSD);
+  document.getElementById('holiday-block').style.display = 'block';
+  renderHoliday();
+  renderAdvice(salaryUSD);
+
+  document.getElementById('results').classList.add('show');
+  document.getElementById('sim-result-block').style.display = 'none';
+  document.getElementById('risk-events-list').innerHTML = '';
+
+  localStorage.setItem('salaryData', JSON.stringify({
+    salary,
+    currentCur,
+    family: document.getElementById('family').value,
+    housing: document.getElementById('housing').value,
+    goal: document.getElementById('goal').value,
+    debt: document.getElementById('debt').value,
+    basePct,
+    savePct,
+    wishPct,
+    holidayBudget
+  }));
+}
+
+function runSimulation() {
+  const years = +document.getElementById('yearsSlider').value;
+  const raisePct = +document.getElementById('raiseInput').value / 100;
+  const returnPct = +document.getElementById('returnInput').value / 100;
+  const inflationPct = +document.getElementById('inflationInput').value / 100;
+
+  let currentSalary = salary;
+  let currentSavings = window.saveAmt || 0;
+  let currentInvestments = window.investAmt || 0;
+  let currentDebts = (window.debtAmt || 0) - (window.actualDebtPayment || 0);
+
+  const data = [];
+
+  for (let y = 0; y <= years; y++) {
+    data.push({
+      year: y,
+      salary: Math.round(currentSalary),
+      savings: Math.round(currentSavings),
+      investments: Math.round(currentInvestments),
+      debts: Math.round(Math.max(0, currentDebts)),
+      net: Math.round(currentSavings + currentInvestments - Math.max(0, currentDebts))
+    });
+
+    if (y < years) {
+      // Apply raise
+      currentSalary *= (1 + raisePct);
+
+      // Investments grow
+      currentInvestments *= (1 + returnPct);
+
+      // Pay debts if any
+      if (currentDebts > 0) {
+        const payment = Math.min(currentDebts, currentSalary * 0.1);
+        currentDebts -= payment;
+      }
+
+      // Add to savings from new salary (simplified: 20% of salary to savings)
+      currentSavings += currentSalary * 0.2;
+
+      // Random event occasionally
+      if (Math.random() < 0.2) { // 20% chance per year
+        const event = randomEvents[Math.floor(Math.random() * randomEvents.length)];
+        const impact = currentSalary * Math.abs(event.impact);
+        if (event.impact > 0) {
+          currentSavings += impact;
+        } else {
+          currentSavings = Math.max(0, currentSavings - impact);
+        }
+      }
+    }
+  }
+
+  // Render table
+  let tableHTML = '<tr><th>Год</th><th>ЗП</th><th>Сбережения</th><th>Инвестиции</th><th>Долги</th><th>Чистый капитал</th></tr>';
+  data.forEach(d => {
+    tableHTML += `<tr><td>${d.year}</td><td>${fmt(d.salary)}</td><td>${fmt(d.savings)}</td><td>${fmt(d.investments)}</td><td>${fmt(d.debts)}</td><td>${fmt(d.net)}</td></tr>`;
+  });
+  document.getElementById('sim-table').innerHTML = tableHTML;
+
+  // Chart
+  const ctx = document.getElementById('simChart').getContext('2d');
+  if (window.simChart && typeof window.simChart.destroy === 'function') {
+    window.simChart.destroy();
+  }
+  window.simChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.map(d => 'Год ' + d.year),
+      datasets: [{
+        label: 'Чистый капитал',
+        data: data.map(d => d.net),
+        borderColor: '#4ade80',
+        backgroundColor: 'rgba(74,222,128,0.1)',
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: function(value) {
+              return fmt(value);
+            }
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        }
+      }
+    }
+  });
+
+  document.getElementById('sim-years-result').textContent = years;
+  document.getElementById('final-networth').textContent = fmt(data[years].net);
+  document.getElementById('sim-note').textContent = 'С учётом роста ЗП, доходности инвестиций, погашения долгов и случайных событий.';
+  document.getElementById('sim-result-block').style.display = 'block';
+}
+
+function resetAll() {
+  document.getElementById('salaryInput').value = '';
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('sim-result-block').style.display = 'none';
+  document.getElementById('risk-events-list').innerHTML = '';
+  localStorage.removeItem('salaryData');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// INIT
+renderPresets();
+const saved = localStorage.getItem('salaryData');
+if (saved) {
+  const data = JSON.parse(saved);
+  document.getElementById('salaryInput').value = data.salary;
+  setCurrency(data.currentCur);
+  document.getElementById('family').value = data.family;
+  document.getElementById('housing').value = data.housing;
+  document.getElementById('goal').value = data.goal;
+  document.getElementById('debt').value = data.debt;
+  basePct = data.basePct;
+  savePct = data.savePct;
+  wishPct = data.wishPct;
+  holidayBudget = data.holidayBudget;
+  document.getElementById('baseSlider').value = basePct;
+  document.getElementById('saveSlider').value = savePct;
+  document.getElementById('wishSlider').value = wishPct;
+  onSlider();
+  calculate();
+}
+document.getElementById('salaryInput').addEventListener('keydown', e => { if(e.key==='Enter') calculate(); });
+</script>
+</body>
+</html>
