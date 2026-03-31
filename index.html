@@ -770,7 +770,11 @@ function toggleCat(id) {
 function calculate() {
   const raw = parseFloat(document.getElementById('salaryInput').value);
   if (isNaN(raw) || raw <= 0) {
-    alert('Пожалуйста, введите положительную зарплату.');
+    // Не показываем alert если поле просто пустое (при загрузке страницы)
+    const inputValue = document.getElementById('salaryInput').value.trim();
+    if (inputValue !== '') {
+      alert('Пожалуйста, введите положительную зарплату.');
+    }
     return;
   }
   salary = raw;
